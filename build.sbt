@@ -13,29 +13,11 @@ lazy val startTestServer = taskKey[Unit]("Start a http server used by tests (use
 lazy val is2_11 = settingKey[Boolean]("Is the scala version 2.11.")
 lazy val is2_11_or_2_12 = settingKey[Boolean]("Is the scala version 2.11 or 2.12.")
 
-val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
+val commonSettings = commonSmlBuildSettings ++ Seq(
   organization := "com.softwaremill.sttp",
   scalafmtOnCompile := true,
   // cross-release doesn't work when subprojects have different cross versions
   // work-around from https://github.com/sbt/sbt-release/issues/214
-  releaseProcess := Seq(
-    checkSnapshotDependencies,
-    inquireVersions,
-    // publishing locally so that the pgp password prompt is displayed early
-    // in the process
-    releaseStepCommandAndRemaining("+publishLocalSigned"),
-    releaseStepCommandAndRemaining("+clean"),
-    releaseStepCommandAndRemaining("+test"),
-    setReleaseVersion,
-    updateVersionInDocs(organization.value),
-    commitReleaseVersion,
-    tagRelease,
-    releaseStepCommandAndRemaining("+publishSigned"),
-    setNextVersion,
-    commitNextVersion,
-    releaseStepCommand("sonatypeReleaseAll"),
-    pushChanges
-  ),
   is2_11 := scalaVersion.value.startsWith("2.11."),
   is2_11_or_2_12 := scalaVersion.value.startsWith("2.11.") || scalaVersion.value.startsWith("2.12.")
 )
@@ -303,7 +285,7 @@ lazy val zio: Project = (project in file("implementations/zio"))
     name := "zio",
     publishArtifact in Test := true,
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % "1.0.0-RC10-1"
+      "dev.zio" %% "zio" % "1.0.0-RC11-1"
     )
   )
   .dependsOn(coreJVM % "compile->compile;test->test")
@@ -367,11 +349,13 @@ lazy val asyncHttpClientZioStreamsBackend: Project =
   asyncHttpClientBackendProject("zio-streams")
     .settings(
       libraryDependencies ++= Seq(
-        "dev.zio" %% "zio-streams" % "1.0.0-RC10-1",
+        "dev.zio" %% "zio-streams" % "1.0.0-RC11-1",
         "dev.zio" %% "zio-interop-reactivestreams" % "1.0.2.0-RC3"
-      )
+      ),
+      publishTo :=
+        (if (isSnapshot.value) None
+        else Some("releases" at "https://nexus.com/nexus/content/repositories/releases"))
     )
-    .settings(only2_11_and_2_12_settings)
     .dependsOn(zio % "compile->compile;test->test")
 
 lazy val asyncHttpClientMonixBackend: Project =
